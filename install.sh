@@ -22,9 +22,11 @@ function check_error(){
 function install_vim_plug(){
     # install_vim_plug installs the minimalistic plugin manager vim plug
     # Downloads the the file and places it in autoload directory of vim
-
-    curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    if [ ! -f ~/.vim/autoload/plug.vim ];
+    then
+        curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+        https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    fi
 
     check_error "An Error Occurred Downloading vim plug. Please check internet connection"
 }
@@ -45,18 +47,31 @@ function setup_plugins(){
     check_error "An error occured creating vimrc. Check permissions"
     if $( grep -q 'call plug#begin()' ~/.vimrc );
     then
-        plugins=$( grep -P "Plug '.*'$" $BASEDIR/config/.vimrc )
-        autocmd=$( grep -P "autocmd" $BASEDIR/config/.vimrc )
+        plugins=$( grep -P "Plug .*" $BASEDIR/config/.vimrc )
+        autocmds=$( grep -P "autocmd .*" $BASEDIR/config/.vimrc )
 
         for plugin in $plugins;
         do
+            if $( grep -qF "$plugin" ~/.vimrc );
+            then 
+                continue
+            fi
+
             sed -ie "/call plug#begin()/a $plugin" ~/.vimrc;
         done
 
         check_error "An error occured when modifying vimrc. Check permissions"
         # Adding autocmd specified in vimrc file
-        echo $'\nCommands to run as soon as vim opens\n' >> ~/.vimrc
-        echo "$autocmd" >> ~/.vimrc
+        for autocmd in $autocmds;
+        do
+            echo $autocmd
+            echo just here
+            if $( grep -qF "$autocmd" ~/.vimrc );
+            then 
+                continue
+            fi
+            echo "$autocmd" >> ~/.vimrc
+        done
         echo $'\n' >> ~/.vimrc
 
     else
